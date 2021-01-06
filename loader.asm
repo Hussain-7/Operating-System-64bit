@@ -189,9 +189,16 @@ PEnd:
 LMEntry:
     ;FOr 64 bit mode we only initialize stack pointer hence we set it to 7c00
     mov rsp,0x7c00
+    ;clearing direction flag so that move instruction will process data from low memory address to high memory address or in short data is copied in foward direction
+    cld
+    ;the Destination address is in rdi register and Source address is in rsi register
+    mov rdi,0x200000
+    mov rsi,0x10000
+    mov  rcx,51200/8
+    rep movsq
 
-    mov byte[0xb8000],'L'
-    mov byte[0xb8001],0xa
+
+    jmp 0x200000
 
 LEnd:
     hlt
