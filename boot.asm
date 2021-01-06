@@ -26,13 +26,14 @@ TestDiskExtension:
 LoadLoader:
     ;ReadPacket : which mean we want to use disk extension service
     ; Offset   field
-    ;   0      size
-    ;   2      number of sectors
+    ;   0      size of reapacket
+    ;   2      number of sectors and sector size is assumed to be 512bytes
     ;   4      offset
     ;   6      segment
     ;   8      address lo
     ;   12     address hi
     ; si is the index register 
+    ;Boot file consumes 1 sector and loader consume next 5 sectors and hence we assign 6th sector to Kernel
 
 
     mov si,ReadPacket
