@@ -139,19 +139,70 @@ PMEntry:
    mov ss,ax
    mov esp,0x7c00
 
-   mov byte[0xb8000], 'P'
-   mov byte[0xb8001], 0xa
-   
+
+    ;this block of code till lgdt initialize paging structure used to translate virtual address to physical address
+    cld
+    mov edi,0x70000
+    xor eax,eax
+    mov ecx,0x10000/4
+    rep stosd
+    
+    mov dword[0x70000],0x71007
+    mov dword[0x71000],10000111b
+
+    lgdt [Gdt64Ptr]
+    ;To enable 64bit mode now we have to set nesseary bit to 1
+
+    ;bit 5 in cr4 is called physical address extension or PAE bit must be set to
+    mov eax,cr4
+    or eax,(1<<5)
+    mov cr4,eax
+
+    ;Copy the address of page structure we just set up to the cr3 register
+    mov eax,0x70000
+    mov cr3,eax
+
+    ;the bit 8 of model specific register should be set to 1 to enable long mode
+    ;FOr that We move index register to ecx
+    mov ecx,0xc0000080
+    rdmsr
+    ;return value from rdmsr is in eax
+    or eax,(1<<8)
+    ;After making 8th bit in eax value 1 ,we can write it back we use write eax to model specific register function 
+    wrmsr
+
+    ;Also have to enable bit 31 in cr0 register
+    ;we can do it the similar way
+    mov eax,cr0
+    or eax,(1<<31)
+    mov cr0,eax
+ 
+    ;Since each entry is 8 bytes and each entry register is 8 bytes and code segment descriptor is second enter and then offset long mode entry is 8
+    jmp 8:LMEntry
+
 PEnd:
     hlt
     jmp PEnd
   
 
+[BITS 64]
+LMEntry:
+    ;FOr 64 bit mode we only initialize stack pointer hence we set it to 7c00
+    mov rsp,0x7c00
+
+    mov byte[0xb8000],'L'
+    mov byte[0xb8001],0xa
+
+LEnd:
+    hlt
+    jmp LEnd
+    
 
 
 DriveId:    db 0
 ReadPacket: times 16 db 0
 
+;gdt 32 initializtion in protected
 Gdt32:
    ;Since first entry in global descriptor table is empty and since each entry in gdt is 8bytes we set it to 0 using dq   dq 0
    dq 0
@@ -181,8 +232,9 @@ Code32:
     
     db 0xcf
     db 0
-    
-data32:
+   
+     
+Data32:
     ;Data segement initialization is sane as code except a few changes
     ;type field in this byte is changed [P|DPL|S|TYPE]
     ;it is set to 0010 which mean data segement is readable and writable data segment and hence [P|DPL|S|TYPE] =0x92 hex
@@ -202,3 +254,17 @@ Gdt32Ptr: dw Gdt32Len-1
 
 Idt32Ptr: dw 0
           dd 0
+
+
+Gdt64:
+    ;first segment empty hence set to 0
+    dq 0
+    ;left over [D L P DPL 1 1 C]
+    ;           0 1 1 00      0
+    dq 0x0020980000000000
+
+Gdt64Len: equ $-Gdt64
+
+
+Gdt64Ptr: dw Gdt64Len-1
+          dd Gdt64
