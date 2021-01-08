@@ -118,13 +118,13 @@ InitPIC:
    mov al,32
    ;to store data to data register whose address is 21 and a1 for master and slave
    out 0x21,al
-   ;starting vector for slave is 40 in this case so we copy 4- to slave's data register
+   ;starting vector for slave is 40 in this case so we copy 40 to slave's data register
    mov al,40
    out 0xa1,al
    ;3rd initialization of command word
    ;this word indicates that which IRQ is used for connecting two PIC chips
    ;initialization command word 3 is 7 6 5 4 3 2 1 0 bit
-   ;                                  0 0 0 0 0 1 0 0= 0x4
+   ;                                 0 0 0 0 0 1 0 0= 0x4
    ;since on regular system,the slave is attached to master via IRQ 2 hence we set bit 2
    mov al,4
    out 0x21,al
@@ -186,22 +186,29 @@ InitPIC:
     ;when return executes rsp sets to 0x7c00 and hence we jump to user entry
     
 UserEntry:
-   mov ax,cs
-   and al,11b
-   cmp al,3
-   jne UEnd
- 
+   ;Priveledge test code commented out
+   ; mov ax,cs
+   ; and al,11b
+   ; cmp al,3
+   ; jne UEnd
+
+   ;So to show that control is transferring  between user and timer handler constantly
+   ;we increment the printed value here too
+   ;when ever timer handler is called,the proesser pushes rsp and rip to stack (register stack point and register instruction pointer)
+   ;and when we return from handler those register values are restored so any task we will perform can continue
+   
    ;Printing to indicate that now we are in usermode
-   mov byte[0xb8010],'U'
-   mov byte[0xb8011],0xE
+   inc byte[0xb8010]
+   mov byte[0xb8011],0xF
    
    ;we now have to implement task state managment
    ;enable interrupt in user mode
    ;What we need to implement now is when we are running in user mode and a interrupt is fired then controll should be transferred from ring 3 to ring0 or kernel mode
 
 UEnd:
-   jmp UEnd
-   
+
+   ;jmp UEnd comment this so we come out of the infinite loop and seting jmp to user entry inorder to loop through user enrty again
+   jmp UserEntry
 
 
 End:
@@ -250,7 +257,10 @@ Handler0:
 
     iretq
 Timer:
-
+;At this point we recived the interrupt only once.Becasue we jump to end  right after we enter timer handler
+;The timer interrupt is configured as recoccuring interrupt which is fired at every 10ms
+;if we set handler to return instead of jumping to label end we can recieve interrupts again and again
+;As it set up it is call every 10ms
     push rax
     push rbx  
     push rcx
@@ -267,10 +277,16 @@ Timer:
     push r14
     push r15
     
-    mov byte[0xb8020],'T'
+    inc byte[0xb8020]
     mov byte[0xb8021],0xe
 
-    jmp End
+    ;jmp End     removed this so interrupt handler run continuously
+    ;In hardware interrupts we need to acknowledge interrupts before we return from its handlers otherwise we cannot recieve interrupt again
+    ;To ack int we can write value to command register PIC(Its bit 5((counting from 0) is non specfic end of interrupt) so we can set it to 1 to ack this interrupt
+     mov al,0x20
+     out 0x20,al ;0x20 is address of command register of master
+     
+
 
     pop	r15
     pop	r14
@@ -323,7 +339,7 @@ Idt:
       dw  0x8
       db  0
       ;6th byte is Attribute byte  P DPL TYPE
-      ;                1 00  01110
+      ;                            1 00  01110
       db  0x8e
       dw  0
       dd  0
@@ -348,7 +364,7 @@ Tss:
 TssLen: equ $-Tss
 
 ;Tss Details
-;Value of Rso is stored in Tss
+;Value of Rs0 is stored in Tss
 ;when control is transferred from low priveledge ring0 the value of RSP0 is loaded to RSP register
 ;Since we dont require ring1 and ring2 we donot set those fields
 ;we set Ist field also zero since we have seen previously in IRT table setting IST field in interrupt descriptor,then its the index of ist here
