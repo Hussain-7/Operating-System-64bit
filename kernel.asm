@@ -1,9 +1,6 @@
 [BITS 64]
 [ORG 0X200000]
 
-
-
-
 start:
 
    mov rdi,Idt
@@ -38,12 +35,26 @@ start:
    lgdt [Gdt64Ptr]
    lidt [IdtPtr]
    
+SetTss:
+   mov rax,Tss
+   mov [TssDesc+2],ax
+   shr rax,16
+   mov [TssDesc+4],al
+   shr rax,8
+   mov [TssDesc+7],al
+   shr rax ,8
+   mov [TssDesc+8],eax
+   ;Now we can load selector using task register since tss descriptor is set
+   
+   ;Selector we use here is on address 0x20 since descripter is in fifth entry in gdt
+   mov ax,0x20
+   ltr ax
+   ;setting up tss in done
+
+
    ;we are going so shift from ring 0 (kernel) to ring 3 (user mode)
    ;we can check in which mode we are by checking the lower 2 bits of code segment register 00 is ring 0 and so on to 11 meaning ring 3
    ;so we have prepare the code segment descriptor for ring3 and load to cs register then we can run in user mode or ring 3
-   
-
-   
    ;To get code segment descriptor instead of using jump here we will use a new type of instruction
    ;We push the operand needed to load code segment to stack
    push 8  ;code segment selector
@@ -167,7 +178,8 @@ InitPIC:
    ;We are using  4th ss selector hence 24bit address is 0x18 plus the dpl bit also set so plus 3 hex
     push 0x18|3 ;for ss selector: 0x18 + 0x3 hex and then push to stack 
     push 0x7c00 ;RSP:stack points should still the address we set in boot asm file at the top
-    push 0x2    ;R flags:we only set bit 1 to 1 other carry and overflow flag are set to zero
+    ;When we return in user mode value is loaded in rflags and interrupt is enabled
+    push 0x202    ;R flags:we only set bit 1 to 1 other carry and overflow flag are set to zero and bit 9 is also set since its interrup enable bit since and after switching from ring 0 to 3 we desable interrupt hence 000....1000000010=0x202 
     push 0x10|3  ; since we want to refernece 3rd descriptor of code segment address value is 0x10 and dpl also set hence plus 0x3      
     push UserEntry
     iretq
@@ -182,6 +194,10 @@ UserEntry:
    ;Printing to indicate that now we are in usermode
    mov byte[0xb8010],'U'
    mov byte[0xb8011],0xE
+   
+   ;we now have to implement task state managment
+   ;enable interrupt in user mode
+   ;What we need to implement now is when we are running in user mode and a interrupt is fired then controll should be transferred from ring 3 to ring0 or kernel mode
 
 UEnd:
    jmp UEnd
@@ -251,8 +267,8 @@ Timer:
     push r14
     push r15
     
-    mov byte[0xb8010],'T'
-    mov byte[0xb8011],0xe
+    mov byte[0xb8020],'T'
+    mov byte[0xb8021],0xe
 
     jmp End
 
@@ -284,6 +300,17 @@ Gdt64:
     ;                             1 11  1 0 0 1 0  = 0xf2                 
     dq 0x0000f20000000000
 
+;Adding this label just to clearly know here i added tss descriptor
+TssDesc:
+    dw TssLen-1
+    dw 0 ;Not seeting here will set at runtime
+    db 0
+    ;Attribute value [1 DPL TYPE]
+    ;                 1 00  01001
+    db 0x89 
+    db 0
+    db 0
+    dq 0
 Gdt64Len: equ $-Gdt64
 
 
@@ -307,3 +334,31 @@ IdtLen: equ $-Idt
 
 IdtPtr: dw IdtLen-1
         dq Idt
+
+Tss:
+   dd 0;first 4 bytes set to zero
+   ;here load rsp0 and rsp1 with 0x15000 when interruot handler called
+   dq 0x15000
+   ;using directive time to set all other bytes to 0 12 other field all of 4 bytes each hence 88 bytes in total
+   times 88 db 0
+   dd TssLen
+
+
+
+TssLen: equ $-Tss
+
+;Tss Details
+;Value of Rso is stored in Tss
+;when control is transferred from low priveledge ring0 the value of RSP0 is loaded to RSP register
+;Since we dont require ring1 and ring2 we donot set those fields
+;we set Ist field also zero since we have seen previously in IRT table setting IST field in interrupt descriptor,then its the index of ist here
+;for example if ist1 is set then value of ist1 must be loaded instead of rsp0 value to the rsp register
+;last io permission field is also not set since it is not required
+
+;Tss descriptor is also stored in Gdt
+;In attribue setting 010010 means that this is a 64bit tss descriptor
+;P and dpl are the same as in other descriptors
+;G and avl bits not used here hence set to 0
+
+;we also need a selector to reference the descriptor.but in case of tss loading selector is different
+;In this case have to load selector to tss register then use selector to locate descriptor in GDT
