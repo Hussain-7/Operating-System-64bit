@@ -3,8 +3,8 @@ plugin_ctrl: unmapped=true, biosdev=true, speaker=true, extfpuirq=true, parallel
 config_interface: textconfig
 display_library: x
 memory: host=1024, guest=1024
-romimage: file="/home/xrevenge-7/Downloads/bochs/bios/BIOS-bochs-latest", address=0x00000000, options=none
-vgaromimage: file="/home/xrevenge-7/Downloads/bochs/bios/VGABIOS-lgpl-latest"
+romimage: file="./config/bochs/bios/BIOS-bochs-latest", address=0x00000000, options=none
+vgaromimage: file="./config/bochs/bios/VGABIOS-lgpl-latest"
 boot: disk
 floppy_bootsig_check: disabled=0
 # no floppya
