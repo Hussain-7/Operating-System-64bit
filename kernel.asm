@@ -38,6 +38,10 @@ start:
    lgdt [Gdt64Ptr]
    lidt [IdtPtr]
    
+   ;we are going so shift from ring 0 (kernel) to ring 3 (user mode)
+   ;we can check in which mode we are by checking the lower 2 bits of code segment register 00 is ring 0 and so on to 11 meaning ring 3
+   ;so we have prepare the code segment descriptor for ring3 and load to cs register then we can run in user mode or ring 3
+   
 
    
    ;To get code segment descriptor instead of using jump here we will use a new type of instruction
@@ -144,8 +148,44 @@ InitPIC:
    ;As when we switched from realmode to protected mode in loader file we disabled the interrupt
    ;so we need to enable the interrupts again
    
+   
    ;set interrupt flag function
-   sti
+   ;sti
+   ;comment this as dont require it now
+
+    ;We use interrupt return to jump from ring0 to ring3
+    ;what we'll have to do is prepare 5-8 bytes dara on stack
+    ;Refer stack diagram for this
+    ;RIP value specifies where will we return or return address simply
+    ;cs selector : we will load cs register after we return
+    ;R flags contain status of cpu and when we return value will be loaded to stack pointer
+    ;Rsp will store the stack pointer
+    ;ss Selector 
+    ;Since the stack has lIFO order we push these in receverse order.
+   
+
+   ;We are using  4th ss selector hence 24bit address is 0x18 plus the dpl bit also set so plus 3 hex
+    push 0x18|3 ;for ss selector: 0x18 + 0x3 hex and then push to stack 
+    push 0x7c00 ;RSP:stack points should still the address we set in boot asm file at the top
+    push 0x2    ;R flags:we only set bit 1 to 1 other carry and overflow flag are set to zero
+    push 0x10|3  ; since we want to refernece 3rd descriptor of code segment address value is 0x10 and dpl also set hence plus 0x3      
+    push UserEntry
+    iretq
+    ;when return executes rsp sets to 0x7c00 and hence we jump to user entry
+    
+UserEntry:
+   mov ax,cs
+   and al,11b
+   cmp al,3
+   jne UEnd
+ 
+   ;Printing to indicate that now we are in usermode
+   mov byte[0xb8010],'U'
+   mov byte[0xb8011],0xE
+
+UEnd:
+   jmp UEnd
+   
 
 
 End:
@@ -239,6 +279,10 @@ Gdt64:
     ;left over [D L P DPL 1 1 C]
     ;           0 1 1 00      0
     dq 0x0020980000000000
+    dq 0x0020f80000000000  ;same as first code segment descriptor except [D L P DPL 1 1 C]  dpl changed from 00 to 11 meaning priveledge level is ring 3
+    ; data segment attribute are [P DPL 1 0 0 W 0] Present bit sent to 1 and 10 after dpl bits (which is indicates priveledge level or ring no) mean this is data segment the 3rd bit from left not used hencce set to 0, W bit is 1 indicating it is writable
+    ;                             1 11  1 0 0 1 0  = 0xf2                 
+    dq 0x0000f20000000000
 
 Gdt64Len: equ $-Gdt64
 
