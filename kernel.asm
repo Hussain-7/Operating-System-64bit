@@ -1,39 +1,78 @@
-[BITS 64]
-[ORG 0X200000]
+;Now the code is just initializing TSS PIT and PIC all the handler and other code will be adder to other files
+
+section .data
+
+Gdt64:
+    ;first segment empty hence set to 0
+    dq 0
+    ;left over [D L P DPL 1 1 C]
+    ;           0 1 1 00      0
+    dq 0x0020980000000000
+    dq 0x0020f80000000000  ;same as first code segment descriptor except [D L P DPL 1 1 C]  dpl changed from 00 to 11 meaning priveledge level is ring 3
+    ; data segment attribute are [P DPL 1 0 0 W 0] Present bit sent to 1 and 10 after dpl bits (which is indicates priveledge level or ring no) mean this is data segment the 3rd bit from left not used hencce set to 0, W bit is 1 indicating it is writable
+    ;                             1 11  1 0 0 1 0  = 0xf2                 
+    dq 0x0000f20000000000
+
+;Adding this label just to clearly know here i added tss descriptor
+TssDesc:
+    dw TssLen-1
+    dw 0 ;Not seeting here will set at runtime
+    db 0
+    ;Attribute value [1 DPL TYPE]
+    ;                 1 00  01001
+    db 0x89 
+    db 0
+    db 0
+    dq 0
+Gdt64Len: equ $-Gdt64
+
+
+Gdt64Ptr: dw Gdt64Len-1
+          dq Gdt64
+
+Tss:
+   dd 0;first 4 bytes set to zero
+   ;here load rsp0 and rsp1 with 0x15000 when interruot handler called
+   dq 0x15000
+   ;using directive time to set all other bytes to 0 12 other field all of 4 bytes each hence 88 bytes in total
+   times 88 db 0
+   dd TssLen
+
+
+
+TssLen: equ $-Tss
+
+;Tss Details
+;Value of Rs0 is stored in Tss
+;when control is transferred from low priveledge ring0 the value of RSP0 is loaded to RSP register
+;Since we dont require ring1 and ring2 we donot set those fields
+;we set Ist field also zero since we have seen previously in IRT table setting IST field in interrupt descriptor,then its the index of ist here
+;for example if ist1 is set then value of ist1 must be loaded instead of rsp0 value to the rsp register
+;last io permission field is also not set since it is not required
+
+;Tss descriptor is also stored in Gdt
+;In attribue setting 010010 means that this is a 64bit tss descriptor
+;P and dpl are the same as in other descriptors
+;G and avl bits not used here hence set to 0
+
+;we also need a selector to reference the descriptor.but in case of tss loading selector is different
+;In this case have to load selector to tss register then use selector to locate descriptor in GDT
+
+
+
+
+
+
+section .text
+;In text section the interrupt handlers are not defined in kernel file and so the can be implemented in other files
+
+;Since the kernal main function is not defined here but in the c file
+extern KMain
+;Making a global start label so the linker will know that the start is entry of the kernel
+global start
 
 start:
-
-   mov rdi,Idt
-
-   ;Interrupt Handler 1
-   mov rax,Handler0
-   ;now rdi holds address of Idt and rax hold address of offset of handler 0
-   ;An we know that offset is divided into 3 parts(total of 64 bit)lower 16bit is in the first two bytes
-   mov [rdi],ax
-   shr rax,16
-   ;now second part of offset is in ax
-   ;since next offset bit location is at 7th byte we add 6 to rdi so it points to 7th byte
-   mov[rdi+6],ax
-   ;now third part of offset 32bits is in eax
-   ;since next offset bit location is at 9th byte we add 8 to rdi so it points to 9th byte
-   shr rax,16
-   mov[rdi+8],eax
-
-   ;Interrupt Handler 2
-   mov rax,Timer
-   ;rax hold address of offset of Timer and then we follow same steps as for handler
-   ;rdi holds the address of idt and so we add rdi 32*16 so it points to timer entry
-   ;vector numnber for timer is set to 32 in the PIC so address of entry is base of idt
-   ;so  address of entry must be base of idt plus 32*16 ,keeping in mind each entry takes 16 byte space
-   add rdi,32*16
-   mov [rdi],ax
-   shr rax,16
-   mov[rdi+6],ax
-   shr rax,16
-   mov[rdi+8],eax
-
    lgdt [Gdt64Ptr]
-   lidt [IdtPtr]
    
 SetTss:
    mov rax,Tss
@@ -50,26 +89,6 @@ SetTss:
    mov ax,0x20
    ltr ax
    ;setting up tss in done
-
-
-   ;we are going so shift from ring 0 (kernel) to ring 3 (user mode)
-   ;we can check in which mode we are by checking the lower 2 bits of code segment register 00 is ring 0 and so on to 11 meaning ring 3
-   ;so we have prepare the code segment descriptor for ring3 and load to cs register then we can run in user mode or ring 3
-   ;To get code segment descriptor instead of using jump here we will use a new type of instruction
-   ;We push the operand needed to load code segment to stack
-   push 8  ;code segment selector
-   push  KernelEntry ;Offset - so here we give the address of location we want to branch in
-   db 0x48
-   ;Default operand size of for return is 32bit hrnce we also add operand size override param
-   retf
-
-KernelEntry:
-   mov byte[0xb8000],'K'
-   mov byte[0xb8001],0xa
-   
-   ;Used to check div by zero interrupt
-   ;xor rbx,rbx
-   ;div rbx
 
 InitPIT:
 ;There are 3 channels in the PIT,through channel 0 to channel 2
@@ -154,228 +173,25 @@ InitPIC:
    mov al,11111111b
    out 0xa1,al
 
-   ;Now only Irq0 of master will fire interrupts
-   
-   ;As when we switched from realmode to protected mode in loader file we disabled the interrupt
-   ;so we need to enable the interrupts again
-   
-   
-   ;set interrupt flag function
-   ;sti
-   ;comment this as dont require it now
+   ;we are going so shift from ring 0 (kernel) to ring 3 (user mode)
+   ;we can check in which mode we are by checking the lower 2 bits of code segment register 00 is ring 0 and so on to 11 meaning ring 3
+   ;so we have prepare the code segment descriptor for ring3 and load to cs register then we can run in user mode or ring 3
+   ;To get code segment descriptor instead of using jump here we will use a new type of instruction
+   ;We push the operand needed to load code segment to stack
+   push 8  ;code segment selector
+   push  KernelEntry ;Offset - so here we give the address of location we want to branch in
+   db 0x48
+   ;Default operand size of for return is 32bit hrnce we also add operand size override param
+   retf
 
-    ;We use interrupt return to jump from ring0 to ring3
-    ;what we'll have to do is prepare 5-8 bytes dara on stack
-    ;Refer stack diagram for this
-    ;RIP value specifies where will we return or return address simply
-    ;cs selector : we will load cs register after we return
-    ;R flags contain status of cpu and when we return value will be loaded to stack pointer
-    ;Rsp will store the stack pointer
-    ;ss Selector 
-    ;Since the stack has lIFO order we push these in receverse order.
+KernelEntry:
    
-
-   ;We are using  4th ss selector hence 24bit address is 0x18 plus the dpl bit also set so plus 3 hex
-    push 0x18|3 ;for ss selector: 0x18 + 0x3 hex and then push to stack 
-    push 0x7c00 ;RSP:stack points should still the address we set in boot asm file at the top
-    ;When we return in user mode value is loaded in rflags and interrupt is enabled
-    push 0x202    ;R flags:we only set bit 1 to 1 other carry and overflow flag are set to zero and bit 9 is also set since its interrup enable bit since and after switching from ring 0 to 3 we desable interrupt hence 000....1000000010=0x202 
-    push 0x10|3  ; since we want to refernece 3rd descriptor of code segment address value is 0x10 and dpl also set hence plus 0x3      
-    push UserEntry
-    iretq
-    ;when return executes rsp sets to 0x7c00 and hence we jump to user entry
+   ;When we enter the kernel entry we can jump to the main function in c
+   ;Before we call the main function we need to point are stack pointer to the correct position
     
-UserEntry:
-   ;Priveledge test code commented out
-   ; mov ax,cs
-   ; and al,11b
-   ; cmp al,3
-   ; jne UEnd
-
-   ;So to show that control is transferring  between user and timer handler constantly
-   ;we increment the printed value here too
-   ;when ever timer handler is called,the proesser pushes rsp and rip to stack (register stack point and register instruction pointer)
-   ;and when we return from handler those register values are restored so any task we will perform can continue
-   
-   ;Printing to indicate that now we are in usermode
-   inc byte[0xb8010]
-   mov byte[0xb8011],0xF
-   
-   ;we now have to implement task state managment
-   ;enable interrupt in user mode
-   ;What we need to implement now is when we are running in user mode and a interrupt is fired then controll should be transferred from ring 3 to ring0 or kernel mode
-
-UEnd:
-
-   ;jmp UEnd comment this so we come out of the infinite loop and seting jmp to user entry inorder to loop through user enrty again
-   jmp UserEntry
-
+    mov rsp,0x2000000
+    call KMain
 
 End:
    hlt
    jmp End
-
-
-
-
-Handler0:
-    push rax
-    push rbx  
-    push rcx
-    push rdx  	  
-    push rsi
-    push rdi
-    push rbp
-    push r8
-    push r9
-    push r10
-    push r11
-    push r12
-    push r13
-    push r14
-    push r15
-    
-    mov byte[0xb8000],'D'
-    mov byte[0xb8001],0xc
-
-    jmp End
-
-    pop	r15
-    pop	r14
-    pop	r13
-    pop	r12
-    pop	r11
-    pop	r10
-    pop	r9
-    pop	r8
-    pop	rbp
-    pop	rdi
-    pop	rsi  
-    pop	rdx
-    pop	rcx
-    pop	rbx
-    pop	rax
-
-    iretq
-Timer:
-;At this point we recived the interrupt only once.Becasue we jump to end  right after we enter timer handler
-;The timer interrupt is configured as recoccuring interrupt which is fired at every 10ms
-;if we set handler to return instead of jumping to label end we can recieve interrupts again and again
-;As it set up it is call every 10ms
-    push rax
-    push rbx  
-    push rcx
-    push rdx  	  
-    push rsi
-    push rdi
-    push rbp
-    push r8
-    push r9
-    push r10
-    push r11
-    push r12
-    push r13
-    push r14
-    push r15
-    
-    inc byte[0xb8020]
-    mov byte[0xb8021],0xe
-
-    ;jmp End     removed this so interrupt handler run continuously
-    ;In hardware interrupts we need to acknowledge interrupts before we return from its handlers otherwise we cannot recieve interrupt again
-    ;To ack int we can write value to command register PIC(Its bit 5((counting from 0) is non specfic end of interrupt) so we can set it to 1 to ack this interrupt
-     mov al,0x20
-     out 0x20,al ;0x20 is address of command register of master
-     
-
-
-    pop	r15
-    pop	r14
-    pop	r13
-    pop	r12
-    pop	r11
-    pop	r10
-    pop	r9
-    pop	r8
-    pop	rbp
-    pop	rdi
-    pop	rsi  
-    pop	rdx
-    pop	rcx
-    pop	rbx
-    pop	rax
-    iretq
-
-Gdt64:
-    ;first segment empty hence set to 0
-    dq 0
-    ;left over [D L P DPL 1 1 C]
-    ;           0 1 1 00      0
-    dq 0x0020980000000000
-    dq 0x0020f80000000000  ;same as first code segment descriptor except [D L P DPL 1 1 C]  dpl changed from 00 to 11 meaning priveledge level is ring 3
-    ; data segment attribute are [P DPL 1 0 0 W 0] Present bit sent to 1 and 10 after dpl bits (which is indicates priveledge level or ring no) mean this is data segment the 3rd bit from left not used hencce set to 0, W bit is 1 indicating it is writable
-    ;                             1 11  1 0 0 1 0  = 0xf2                 
-    dq 0x0000f20000000000
-
-;Adding this label just to clearly know here i added tss descriptor
-TssDesc:
-    dw TssLen-1
-    dw 0 ;Not seeting here will set at runtime
-    db 0
-    ;Attribute value [1 DPL TYPE]
-    ;                 1 00  01001
-    db 0x89 
-    db 0
-    db 0
-    dq 0
-Gdt64Len: equ $-Gdt64
-
-
-Gdt64Ptr: dw Gdt64Len-1
-          dq Gdt64
-
-Idt:
-   %rep 256
-      dw  0
-      dw  0x8
-      db  0
-      ;6th byte is Attribute byte  P DPL TYPE
-      ;                            1 00  01110
-      db  0x8e
-      dw  0
-      dd  0
-      dd  0
-   %endrep
-
-IdtLen: equ $-Idt
-
-IdtPtr: dw IdtLen-1
-        dq Idt
-
-Tss:
-   dd 0;first 4 bytes set to zero
-   ;here load rsp0 and rsp1 with 0x15000 when interruot handler called
-   dq 0x15000
-   ;using directive time to set all other bytes to 0 12 other field all of 4 bytes each hence 88 bytes in total
-   times 88 db 0
-   dd TssLen
-
-
-
-TssLen: equ $-Tss
-
-;Tss Details
-;Value of Rs0 is stored in Tss
-;when control is transferred from low priveledge ring0 the value of RSP0 is loaded to RSP register
-;Since we dont require ring1 and ring2 we donot set those fields
-;we set Ist field also zero since we have seen previously in IRT table setting IST field in interrupt descriptor,then its the index of ist here
-;for example if ist1 is set then value of ist1 must be loaded instead of rsp0 value to the rsp register
-;last io permission field is also not set since it is not required
-
-;Tss descriptor is also stored in Gdt
-;In attribue setting 010010 means that this is a 64bit tss descriptor
-;P and dpl are the same as in other descriptors
-;G and avl bits not used here hence set to 0
-
-;we also need a selector to reference the descriptor.but in case of tss loading selector is different
-;In this case have to load selector to tss register then use selector to locate descriptor in GDT
