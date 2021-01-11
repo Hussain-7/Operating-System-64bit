@@ -145,13 +145,25 @@ PMEntry:
 
     ;this block of code till lgdt initialize paging structure used to translate virtual address to physical address
     cld
+    ;setting address of cr3 which is also the address of PM4 table
+    ;each entry in pml4 represent 512gb but we only implement lower 1gb
     mov edi,0x70000
     xor eax,eax
     mov ecx,0x10000/4
     rep stosd
     
-    mov dword[0x70000],0x71007
-    mov dword[0x71000],10000111b
+    ;each tables takes up 4kb space since 512 entries each of 8ytes each
+    ;setting entry of pml4 table to next tables address which is after 4kb hence 1000h added
+    ;and the last 3 bits are set to 011 
+    mov dword[0x70000],0x71003
+    ;setting entry of page directory table
+    mov dword[0x71000],10000011b
+
+    mov eax,(0xffff800000000000 >> 39)
+    and eax,0x1ff
+    ;Now we have the index to locate coresponding entry in the table
+    mov dword[0x70000 + eax*8],0x72003
+    mov dword[0x72000],10000011b
 
     lgdt [Gdt64Ptr]
     ;To enable 64bit mode now we have to set nesseary bit to 1
@@ -200,8 +212,9 @@ LMEntry:
     mov  rcx,51200/8
     rep movsq
 
-
-    jmp 0x200000
+    ;since the kernel is reallocated to new virtual adddress which is far away from the load hence we save it here
+    mov rax,0xffff800000200000
+    jmp rax
 
 LEnd:
     hlt
@@ -272,6 +285,7 @@ Gdt64:
     ;left over [D L P DPL 1 1 C]
     ;           0 1 1 00      0
     dq 0x0020980000000000
+    
 
 Gdt64Len: equ $-Gdt64
 

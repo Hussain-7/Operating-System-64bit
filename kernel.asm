@@ -33,7 +33,7 @@ Gdt64Ptr: dw Gdt64Len-1
 Tss:
    dd 0;first 4 bytes set to zero
    ;here load rsp0 and rsp1 with 0x15000 when interruot handler called
-   dq 0x15000
+    dq 0xffff800000190000
    ;using directive time to set all other bytes to 0 12 other field all of 4 bytes each hence 88 bytes in total
    times 88 db 0
    dd TssLen
@@ -72,17 +72,20 @@ extern KMain
 global start
 
 start:
-   lgdt [Gdt64Ptr]
+   ;since the kernel is running at higher memory location and we cannot reference it using 32 bit address so instead we move address in rax and load rax
+   mov rax,Gdt64Ptr
+   lgdt [rax]
    
 SetTss:
    mov rax,Tss
-   mov [TssDesc+2],ax
-   shr rax,16
-   mov [TssDesc+4],al
-   shr rax,8
-   mov [TssDesc+7],al
-   shr rax ,8
-   mov [TssDesc+8],eax
+    mov rdi,TssDesc
+    mov [rdi+2],ax
+    shr rax,16
+    mov [rdi+4],al
+    shr rax,8
+    mov [rdi+7],al
+    shr rax,8
+    mov [rdi+8],eax
    ;Now we can load selector using task register since tss descriptor is set
    
    ;Selector we use here is on address 0x20 since descripter is in fifth entry in gdt
@@ -178,8 +181,10 @@ InitPIC:
    ;so we have prepare the code segment descriptor for ring3 and load to cs register then we can run in user mode or ring 3
    ;To get code segment descriptor instead of using jump here we will use a new type of instruction
    ;We push the operand needed to load code segment to stack
+  
+   mov rax,KernelEntry
    push 8  ;code segment selector
-   push  KernelEntry ;Offset - so here we give the address of location we want to branch in
+   push  rax ;Offset - so here we give the address of location we want to branch in
    db 0x48
    ;Default operand size of for return is 32bit hrnce we also add operand size override param
    retf
@@ -188,8 +193,8 @@ KernelEntry:
    
    ;When we enter the kernel entry we can jump to the main function in c
    ;Before we call the main function we need to point are stack pointer to the correct position
-    mov rsp,0x2000000
-    call KMain
+    mov rsp,0xffff800000200000
+   call KMain
 
 End:
    hlt
