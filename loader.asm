@@ -49,7 +49,7 @@ LoadKernel:
 
 GetMemInfoStart:
    ;in this function we get the memory map
-   ;we use belt function we use system map memory function
+   ;we use bios function we use system map memory function
    ;it returns memory blocks
 
    ;offset   field
@@ -60,22 +60,25 @@ GetMemInfoStart:
     mov eax,0xe820
     mov edx,0x534d4150
     mov ecx,20
-    mov edi,0x9000
+    mov dword[0x9000],0
+    mov edi,0x9008
     xor ebx,ebx
+    ;0x15 is a bios interrupt call to obtain memory info
     int 0x15
     jc NotSupport
 
 GetMemInfo:
     ;each memory block is 20 byte so to recieve next we add 20 bytes to edi
     add edi,20
+    inc dword[0x9000] 
+    test ebx,ebx
+    jz GetMemDone
+
     mov eax,0xe820
     mov edx,0x534d4150
     mov ecx,20
     int 0x15
-    jc GetMemDone
-
-    test ebx,ebx
-    jnz GetMemInfo
+    jnc GetMemInfo
 
 
 GetMemDone:
