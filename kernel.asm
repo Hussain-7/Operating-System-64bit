@@ -188,11 +188,8 @@ KernelEntry:
    
    ;When we enter the kernel entry we can jump to the main function in c
    ;Before we call the main function we need to point are stack pointer to the correct position
-    xor ax,ax
-    mov ss,ax
     mov rsp,0x2000000
     call KMain
-    sti
 
 End:
    hlt
