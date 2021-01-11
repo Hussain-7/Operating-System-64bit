@@ -14,7 +14,20 @@ struct FreeMemRegion {
     uint64_t length;
 };
 
+struct Page {
+    struct Page* next;
+};
+
+#define PAGE_SIZE (2*1024*1024)
+
+// next two macros set the address to 2mb boundary
+//this will align address to next 2mb boundary
+#define PA_UP(v) ((((uint64_t)v+PAGE_SIZE-1)>>21)<<21)
+//this will align address to previous 2mb boundary
+#define PA_DOWN(v) (((uint64_t)v>>21)<<21)
+#define P2V(p) ((uint64_t)(p)+0xffff800000000000)
+#define V2P(v) ((uint64_t)(v)-0xffff800000000000)
 void init_memory(void);
-
-
+void* kalloc(void);
+void kfree(uint64_t v);
 #endif
