@@ -6,7 +6,8 @@ nasm -f elf64 -o liba.o lib.asm
 gcc -std=c99 -mcmodel=large -ffreestanding -fno-stack-protector -mno-red-zone -c main.c
 gcc -std=c99 -mcmodel=large -ffreestanding -fno-stack-protector -mno-red-zone -c trap.c
 gcc -std=c99 -mcmodel=large -ffreestanding -fno-stack-protector -mno-red-zone -c print.c
-ld -nostdlib -T link.lds -o kernel kernel.o main.o trapa.o trap.o liba.o print.o
+gcc -std=c99 -mcmodel=large -ffreestanding -fno-stack-protector -mno-red-zone -c debug.c
+ld -nostdlib -T link.lds -o kernel kernel.o main.o trapa.o trap.o liba.o print.o debug.o
 objcopy -O binary kernel kernel.bin
 dd if=boot.bin of=boot.img bs=512 count=1 conv=notrunc
 dd if=loader.bin of=boot.img bs=512 count=5 seek=1 conv=notrunc
