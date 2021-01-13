@@ -231,3 +231,88 @@ void init_kvm(void)
     switch_vm(page_map);
     printk("memory manager is working now");
 }
+
+//This function does exactly the reverse process of mapping pages
+
+void free_pages(uint64_t map, uint64_t vstart, uint64_t vend)
+{
+    //The index will be used to locate the correct entry in th page directory table
+    unsigned int index; 
+
+    //we call the free pages function assuming that vstart and vend is page aligned 
+    //But just in case its not we use asssert call to prevent frrom going ahead if thats not the case
+    ASSERT(vstart % PAGE_SIZE == 0);
+    ASSERT(vend % PAGE_SIZE == 0);
+
+    do {
+        //In this function this time we are passing 0 to alloc so it just returns null if page does not exist
+        PD pd = find_pdpt_entry(map, vstart, 0, 0);
+
+        if (pd != NULL) {
+            index = (vstart >> 21) & 0x1FF;
+            ASSERT(pd[index] & PTE_P);           
+            kfree(P2V(PTE_ADDR(pd[index])));
+            pd[index] = 0;
+        }
+
+        vstart += PAGE_SIZE;
+    } while (vstart+PAGE_SIZE <= vend);
+}
+
+static void free_pdt(uint64_t map)
+{
+    //The map_entry points to pml4 table
+    PDPTR *map_entry = (PDPTR*)map;
+
+    //Since each entry in pml4 table points to a page directory pointer tables
+    //Therefore we can have 512 pdp table
+    for (int i = 0; i < 512; i++) {
+        //we are checking present bit of each entry if present then we further process
+        if ((uint64_t)map_entry[i] & PTE_P) {       
+            //since this entry points to pd table we convert it to virtual address and set to pdtr pointer     
+            PD *pdptr = (PD*)P2V(PDE_ADDR(map_entry[i]));
+            
+             //Since each entry in pdp table points to a page directory tables
+            //Therefore we can have 512 pd table
+            for (int j = 0; j < 512; j++) {
+
+                if ((uint64_t)pdptr[j] & PTE_P) {
+
+                    //free the page
+                    kfree(P2V(PDE_ADDR(pdptr[j])));
+                    //clear this entry
+                    pdptr[j] = 0;
+                }
+            }
+        }
+    }
+}
+
+static void free_pdpt(uint64_t map)
+{
+    //Same logic as free_pdt function but in this we loop through just the pdp table since we dont free pdpt table in this function 
+    PDPTR *map_entry = (PDPTR*)map;
+    for (int i = 0; i < 512; i++) {
+        if ((uint64_t)map_entry[i] & PTE_P) {          
+            kfree(P2V(PDE_ADDR(map_entry[i])));
+            map_entry[i] = 0;
+        }
+    }
+}
+
+static void free_pml4t(uint64_t map)
+{
+    //map is the address of pml4 table so we can directly use it to free table
+    kfree(map);
+}
+//free virtual memory function is actually be required when we build process and create virtual memory
+// and then when process exits to clear vm we use this function
+//for that purpose we free the physical pages in user space aswell as the page translation tables
+
+void free_vm(uint64_t map)
+{   
+    //free_pages(map,vstart,vend);
+    free_pdt(map);
+    free_pdpt(map);
+    free_pml4t(map);
+}
