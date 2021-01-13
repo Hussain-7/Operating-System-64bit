@@ -10,7 +10,6 @@ static void free_region(uint64_t v, uint64_t e);
 static struct FreeMemRegion free_mem_region[50];
 static struct Page free_memory;
 static uint64_t memory_end;
-uint64_t page_map;
 extern char end;
 
 void init_memory(void)
@@ -213,27 +212,71 @@ void switch_vm(uint64_t map)
 
 //Is used to remap out kernel using 2 mb pages 
 
-static void setup_kvm(void)
+uint64_t setup_kvm(void)
 {
-    page_map = (uint64_t)kalloc();
-    ASSERT(page_map != 0);
+    uint64_t page_map = (uint64_t)kalloc();
+    if(page_map != 0){
+        memset((void*)page_map, 0, PAGE_SIZE);        
+        //using PTE_P|PTE_W in last parameter of map_pages function we specify that kernel memory is readable,writeable and not accessible by the user applications
+        if(map_pages(page_map, KERNEL_BASE, memory_end, V2P(KERNEL_BASE), PTE_P|PTE_W))
+        {
+            free_vm(page_map);
+            page_map=0;
+        }
 
-    memset((void*)page_map, 0, PAGE_SIZE);        
-    //using PTE_P|PTE_W in last parameter of map_pages function we specify that kernel memory is readable,writeable and not accessible by the user applications
-    bool status = map_pages(page_map, KERNEL_BASE, memory_end, V2P(KERNEL_BASE), PTE_P|PTE_W);
-    ASSERT(status == true);
+    }
+    return page_map;
+
+   
 }
 
-
+//Setting up Kernel Virtual Memory
 void init_kvm(void)
 {
-    setup_kvm();
+    uint64_t page_map = setup_kvm();
+    //we use assert here because we are in the kernel initialization stage.if operation fails we stop the system
+    ASSERT(page_map !=0);
     switch_vm(page_map);
     printk("memory manager is working now");
 }
 
-//This function does exactly the reverse process of mapping pages
+//Setting up User Virtual Memory
+//Base of the virtual memory for user space is 0x400000
+//We map only one page for user progerms which mean the code,data and stack of the programs are on same 2mb page
+bool setup_uvm(uint64_t map, uint64_t start, int size)
+{
+    bool status = false;
+    //we allocate a page which will be used to store data nad function of a program
+    void *page = kalloc();
 
+    if (page != NULL) {
+        //initializing the page
+        memset(page, 0, PAGE_SIZE);
+        //map - pml4 table address
+        //0x400000 - start address of virtual space we map 
+        //0x400000+PAGE_SIZE -end address of virtual space is this since we only map one page 
+        //v2P(page) - It is the base of physical age we want to map into so we use v2p to convert page to physical address
+        //Last one - is the attribute bits which we set all 3 to one
+        status = map_pages(map, 0x400000, 0x400000+PAGE_SIZE, V2P(page), PTE_P|PTE_W|PTE_U);
+        if (status == true) {
+            //if page is successfully created we just copy the data to the page
+            memcpy(page, (void*)start, size);
+        }
+        else {
+            //since we just map one page and if operation fails it means
+            //mapping is not done when we call free_vm function.hence this page will not be cleared
+            //therefore we use kfree to manually free the page
+            kfree((uint64_t)page);
+            free_vm(map);
+        }
+    }
+    
+    return status;
+}
+
+
+
+//This function does exactly the reverse process of mapping pages
 void free_pages(uint64_t map, uint64_t vstart, uint64_t vend)
 {
     //The index will be used to locate the correct entry in th page directory table
@@ -250,9 +293,10 @@ void free_pages(uint64_t map, uint64_t vstart, uint64_t vend)
 
         if (pd != NULL) {
             index = (vstart >> 21) & 0x1FF;
-            ASSERT(pd[index] & PTE_P);           
-            kfree(P2V(PTE_ADDR(pd[index])));
-            pd[index] = 0;
+            if(pd[index] & PTE_P){           
+                kfree(P2V(PTE_ADDR(pd[index])));
+                pd[index] = 0;
+            }
         }
 
         vstart += PAGE_SIZE;
@@ -311,8 +355,9 @@ static void free_pml4t(uint64_t map)
 
 void free_vm(uint64_t map)
 {   
-    //free_pages(map,vstart,vend);
+    free_pages(map,0x400000,0x400000+PAGE_SIZE);
     free_pdt(map);
     free_pdpt(map);
     free_pml4t(map);
 }
+
