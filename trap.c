@@ -1,5 +1,6 @@
 #include "trap.h"
 #include "print.h"
+#include "syscall.h"
 
 static struct IdtPtr idt_pointer;
 static struct IdtEntry vectors[256];
@@ -39,6 +40,8 @@ void init_idt(void)
     init_idt_entry(&vectors[19],(uint64_t)vector19,0x8e);
     init_idt_entry(&vectors[32],(uint64_t)vector32,0x8e);
     init_idt_entry(&vectors[39],(uint64_t)vector39,0x8e);
+    //in case of this interrup we set dpl to 3 instead of zero because we fire interrupt in ring3
+    init_idt_entry(&vectors[0x80],(uint64_t)sysint,0xee);
 
     idt_pointer.limit = sizeof(vectors)-1;
     idt_pointer.addr = (uint64_t)vectors;
@@ -72,7 +75,11 @@ void handler(struct TrapFrame *tf)
                 eoi();
             }
             break;
-
+        case 0x80:
+        {
+            system_call(tf);
+            break;
+        }
         default:
             {
                 //reminder lower 3 bits stores the current priveledge level

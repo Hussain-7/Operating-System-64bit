@@ -1,11 +1,7 @@
 #include "stdint.h"
 #include "stdarg.h"
-#include "print.h"
-#include "lib.h"
-#include "memory.h"
 
-static struct ScreenBuffer screen_buffer = {(char*)P2V(0xb8000), 0, 0};
-
+extern int writeu(char *buffer, int buffer_size);
 
 static int udecimal_to_string(char *buffer, int position, uint64_t digits)
 {
@@ -62,7 +58,7 @@ static int hex_to_string(char *buffer, int position, uint64_t digits)
 static int read_string(char *buffer, int position, const char *string)
 {
     int index = 0;
-    // since we want to start writting from right after %s or d,u etc start writting from position index 
+
     for (index = 0; string[index] != '\0'; index++) {
         buffer[position++] = string[index];
     }
@@ -70,43 +66,7 @@ static int read_string(char *buffer, int position, const char *string)
     return index;
 }
 
-void write_screen(const char *buffer, int size,  char color)
-{
-    struct ScreenBuffer *sb=&screen_buffer;
-    int column = sb->column;
-    int row = sb->row;
-
-    for (int i = 0; i < size; i++) {       
-        if (row >= 25) {
-            // we copy the characters which are in the second line through the last line to the first to 24th line
-            memcpy(sb->buffer,sb->buffer+LINE_SIZE,LINE_SIZE*24);
-            // then set last line to empty
-            memset(sb->buffer+LINE_SIZE*24,0,LINE_SIZE);
-            row--;
-        }
-        
-        if (buffer[i] == '\n') {
-            column = 0;
-            row++;
-        } 
-        else {
-            sb->buffer[column*2+row*LINE_SIZE] = buffer[i];
-            sb->buffer[column*2+row*LINE_SIZE+1] = color;
-
-            column++;
-
-            if (column >= 80) {
-                column=0;
-                row++;
-            }
-        }
-    }
-
-    sb->column = column;
-    sb->row = row;
-}
-
-int printk(const char *format, ...)
+int printf(const char *format, ...)
 {
     char buffer[1024];
     int buffer_size = 0;
@@ -138,7 +98,6 @@ int printk(const char *format, ...)
                     break;
 
                 case 's':
-                    // we use va_arg macro to retrieve pointer. first param is arg variable second it  type of variable we want to return
                     string = va_arg(args, char*);
                     buffer_size += read_string(buffer, buffer_size, string);
                     break;
@@ -150,9 +109,8 @@ int printk(const char *format, ...)
         }     
     }
 
-    write_screen(buffer, buffer_size, 0xf);
+    buffer_size = writeu(buffer, buffer_size);
     va_end(args);
 
-    //return total number of characters being printed
     return buffer_size;
 }

@@ -46,6 +46,18 @@ LoadKernel:
     int 0x13
     jc  ReadError
 
+LoadUser:
+    mov si,ReadPacket
+    mov word[si],0x10
+    mov word[si+2],10
+    mov word[si+4],0
+    mov word[si+6],0x2000
+    mov dword[si+8],106
+    mov dword[si+0xc],0
+    mov dl,[DriveId]
+    mov ah,0x42
+    int 0x13
+    jc  ReadError
 
 GetMemInfoStart:
    ;in this function we get the memory map
