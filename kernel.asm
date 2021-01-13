@@ -1,7 +1,7 @@
 ;Now the code is just initializing TSS PIT and PIC all the handler and other code will be adder to other files
 
 section .data
-
+global Tss
 Gdt64:
     ;first segment empty hence set to 0
     dq 0

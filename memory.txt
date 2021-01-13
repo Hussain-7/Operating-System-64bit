@@ -79,7 +79,9 @@ void kfree(uint64_t v)
 
 void* kalloc(void)
 {
-    struct Page *page_address = free_memory.next;    
+    struct Page *page_address = free_memory.next;
+    printk("\n%x",page_address);
+
     if (page_address != NULL) {
         ASSERT((uint64_t)page_address % PAGE_SIZE == 0);
         ASSERT((uint64_t)page_address >= (uint64_t)&end);

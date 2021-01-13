@@ -1,4 +1,3 @@
-
 section .text
 extern handler
 global vector0
@@ -25,6 +24,8 @@ global eoi
 global read_isr
 global load_idt
 global load_cr3
+global pstart
+global read_cr2
 
 Trap:
     push rax
@@ -43,8 +44,8 @@ Trap:
     push r14
     push r15
 
-    inc byte[0xb8010]
-    mov byte[0xb8011],0xe
+    ; inc byte[0xb8010]
+    ; mov byte[0xb8011],0xe
 
     mov rdi,rsp
     call handler
@@ -64,8 +65,7 @@ TrapReturn:
     pop	rdx
     pop	rcx
     pop	rbx
-    pop	rax       
-
+    pop	rax   
     ;to make rsp point to the original location before the after two 8bit value were pushed on stack
     add rsp,16
     iretq
@@ -188,8 +188,12 @@ load_idt:
     lidt [rdi]
     ret
 load_cr3:
-    ;in this function we just load the address to the cr3 register
-    mov rax,rdi
+    mov rax,rdi    ;in this function we just load the address to the cr3 register
     mov cr3,rax
     ret
-
+read_cr2:
+    mov rax,cr2
+    ret
+pstart:
+    mov rsp,rdi
+    jmp TrapReturn

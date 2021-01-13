@@ -1,4 +1,5 @@
 #include "trap.h"
+#include "print.h"
 
 static struct IdtPtr idt_pointer;
 static struct IdtEntry vectors[256];
@@ -46,8 +47,12 @@ void init_idt(void)
 
 
 //All interrupts are handled here
-
 //its parameter is actually a stack pointer which we have defined in trap assembly file
+//The reason we have the trap frame structure in the process is that in our system, we have two entry points
+//when we switch from ring3 to ring0. One is through interrupts,another is through exceptions.
+//Since we have handled them in the same function handler, this is actually the only entry point.
+//Which means the function will be called when we jump from ring3 to ring0.
+
 void handler(struct TrapFrame *tf)
 {
     unsigned char isr_value;
@@ -69,6 +74,12 @@ void handler(struct TrapFrame *tf)
             break;
 
         default:
-            while (1) { }
+            {
+                //reminder lower 3 bits stores the current priveledge level
+                //the virtual address which we try to access which casue exception.This  is stored in 
+                printk("[Error %d at ring %d] %d:%x %x",tf->trapno,(tf->cs &3),tf->errorcode,read_cr2(),tf->rip);
+                while (1) { }
+            }
+           
     }
 }
