@@ -6,4 +6,4 @@ void memmove(void *dst, void *src, int size);
 void memcpy(void *dst, void *src, int size);
 int memcmp(void *src1, void *src2, int size);
 
-#endif 
+#endif
