@@ -95,10 +95,21 @@ void handler(struct TrapFrame *tf)
         }
         default:
             {
-                //reminder lower 3 bits stores the current priveledge level
-                //the virtual address which we try to access which casue exception.This  is stored in 
-                printk("[Error %d at ring %d] %d:%x %x",tf->trapno,(tf->cs &3),tf->errorcode,read_cr2(),tf->rip);
-                while (1) { }
+                if((tf->cs & 3) ==3)
+                {
+                    printk("[Exception is %d\n",tf->trapno);
+                    exit();
+
+                }
+                else
+                {
+                     //reminder lower 3 bits stores the current priveledge level
+                    //the virtual address which we try to access which casue exception.This  is stored in 
+                     printk("[Error %d at ring %d] %d:%x %x",tf->trapno,(tf->cs &3),tf->errorcode,read_cr2(),tf->rip);
+                     while (1) { }
+                }
+                
+               
             }
            
     }
