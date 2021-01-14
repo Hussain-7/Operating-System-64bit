@@ -9,6 +9,7 @@ static void free_region(uint64_t v, uint64_t e);
 
 static struct FreeMemRegion free_mem_region[50];
 static struct Page free_memory;
+uint64_t total_mem;
 static uint64_t memory_end;
 extern char end;
 
@@ -18,7 +19,6 @@ void init_memory(void)
     //here it is 4 bytes since we use fixed width data type
     int32_t count = *(int32_t*)0x9000;
     //stores the size of free memry we can use in the system
-    uint64_t total_mem = 0;
     struct E820 *mem_map = (struct E820*)0x9008;	
     //is used to store actual number of free memory region
     int free_region_count = 0;
@@ -53,6 +53,13 @@ void init_memory(void)
     memory_end = (uint64_t)free_memory.next+PAGE_SIZE;
     printk("%x\n",memory_end);
 }
+
+uint64_t get_total_memory(void)
+{
+    //simply returning memory in mb format
+    return total_mem/1024/1024;
+}
+
 
 static void free_region(uint64_t v, uint64_t e)
 {
@@ -236,7 +243,6 @@ void init_kvm(void)
     //we use assert here because we are in the kernel initialization stage.if operation fails we stop the system
     ASSERT(page_map !=0);
     switch_vm(page_map);
-    printk("memory manager is working now");
 }
 
 //Setting up User Virtual Memory

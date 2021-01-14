@@ -4,6 +4,7 @@ global sleepu
 global waitu 
 global exitu 
 global keyboard_readu
+global get_total_memoryu
 
 writeu:
     ;to allocate 16 byte space on stack for the arguments we subtract 16 from rsp which points to stack top
@@ -53,9 +54,12 @@ waitu:
 keyboard_readu:
     mov eax,4
     xor edi,edi
-    
     int 0x80
-
     ret
 
+get_total_memoryu:
+    mov eax,5
+    xor edi,edi
+    int 0x80
+    ret
 
