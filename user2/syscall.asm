@@ -1,5 +1,6 @@
 section .text
 global writeu 
+global sleepu 
 
 writeu:
     ;to allocate 16 byte space on stack for the arguments we subtract 16 from rsp which points to stack top
@@ -20,3 +21,14 @@ writeu:
 
     add rsp,16
     ret
+
+sleepu:
+    sub rsp,8  ;to allocate 8 byte space on stack for the arguments we subtract 8 from rsp which points to stack top
+    mov eax,1  ;index no is 1 for sleep in the kernel
+    mov [rsp],rdi ;(rdi consists of function arguments)so copying the argument to allocated space on stact
+    mov rdi,1 ; for interrupt saving no of arguments
+    mov rsi,rsp ;for interrupt we save address of args to rsi
+    int 0x80
+    add rsp ,8 ;to get back to original stack position
+    ret
+

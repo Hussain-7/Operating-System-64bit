@@ -6,7 +6,7 @@
 
 static struct IdtPtr idt_pointer;
 static struct IdtEntry vectors[256];
-
+static uint64_t ticks;
 
 //It takes 3 params address og idt entry,the address of handler which we defined in assembly
 //and the attribute of the idt entry
@@ -50,6 +50,16 @@ void init_idt(void)
     load_idt(&idt_pointer);
 }
 
+uint64_t get_ticks(void)
+{
+    return ticks;
+}
+
+static void timer_handler(void)
+{
+    ticks++;
+    wake_up(-1);
+} 
 
 //All interrupts are handled here
 //its parameter is actually a stack pointer which we have defined in trap assembly file
@@ -66,6 +76,7 @@ void handler(struct TrapFrame *tf)
         //here we are dealing with only two interrupts the timer and spurious interrupt as 
         //the trap no shows
         case 32:
+            timer_handler();
             eoi();
             break;
             
