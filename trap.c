@@ -1,6 +1,8 @@
 #include "trap.h"
 #include "print.h"
 #include "syscall.h"
+#include "process.h"
+#include "debug.h"
 
 static struct IdtPtr idt_pointer;
 static struct IdtEntry vectors[256];
@@ -88,5 +90,13 @@ void handler(struct TrapFrame *tf)
                 while (1) { }
             }
            
+    }
+    //We use timer interrupt to switch between process 
+    //Since in the process set process entry we set rflags to to 202 which also implies that interrupts are enabled in user mode.
+    //So timer interrupt will also be be processed when we are in the user program and will be handled by trap handler.
+    //Therfore when this condition meets we call yield function to make current process give up cpu resources and choose another process
+    if(tf->trapno == 32)
+    {
+        yield();
     }
 }

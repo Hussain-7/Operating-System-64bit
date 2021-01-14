@@ -27,6 +27,8 @@ global load_idt
 global load_cr3
 global pstart
 global read_cr2
+global swap
+global TrapReturn
 
 Trap:
     push rax
@@ -203,3 +205,38 @@ read_cr2:
 pstart:
     mov rsp,rdi
     jmp TrapReturn
+
+
+
+
+;---------[ Working of swap function ]
+;suppose the current process is process 1 and we want to switch process by calling function swap.
+;The function saves the return address as well as the general-purpose registers on the stack.
+;Then it saves the rsp value in the process structure.
+;Next it will copy the rsp value saved in the process 2 to register rsp
+;Rsp points to the registers and return address saved on the stack the last time it runs which is process 2
+;Then it restores the previous state of process 2 by popping the values to the registers and return to where it was called
+;So when we enter swap function, we are in the process 1, after we return from swap, we are in the process 2
+
+swap:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    
+    ;This way we just change the kernel stack pointer and point it to a different process
+    ;rdi (the address of context field in the process)
+    ;rsi (the context value in the next process)
+    mov [rdi],rsp
+    mov rsp,rsi
+    
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    
+    ret 
