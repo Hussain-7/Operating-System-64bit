@@ -2,6 +2,7 @@
 #include "print.h"
 #include "syscall.h"
 #include "process.h"
+#include "keyboard.h"
 #include "debug.h"
 
 static struct IdtPtr idt_pointer;
@@ -41,6 +42,7 @@ void init_idt(void)
     init_idt_entry(&vectors[18],(uint64_t)vector18,0x8e);
     init_idt_entry(&vectors[19],(uint64_t)vector19,0x8e);
     init_idt_entry(&vectors[32],(uint64_t)vector32,0x8e);
+    init_idt_entry(&vectors[33],(uint64_t)vector33,0x8e);
     init_idt_entry(&vectors[39],(uint64_t)vector39,0x8e);
     //in case of this interrup we set dpl to 3 instead of zero because we fire interrupt in ring3
     init_idt_entry(&vectors[0x80],(uint64_t)sysint,0xee);
@@ -79,7 +81,11 @@ void handler(struct TrapFrame *tf)
             timer_handler();
             eoi();
             break;
-            
+        //Keyboard interrupt
+        case 33:
+            keyboard_handler();
+            eoi();
+            break;
         case 39:
             isr_value = read_isr();
 

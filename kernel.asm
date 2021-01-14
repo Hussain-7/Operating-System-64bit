@@ -170,7 +170,8 @@ InitPIC:
    ;One more thing to do since we have total 15 Irqs in PIC,we only set up one device  the Pit 
    ;hence we mask all Irqs except irq0 which is used by the master which pit uses
    ;Setting all irqs of master except 1st to zero
-   mov al,11111110b
+   ;setting 2nd also t0 0 for keyboard interrupts
+   mov al,11111100b
    out 0x21,al
    ;setting all slave irqs to zero since we donot use it at the moment
    mov al,11111111b

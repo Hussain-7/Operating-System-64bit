@@ -89,6 +89,20 @@ void write_screen(const char *buffer, int size,  char color)
             column = 0;
             row++;
         } 
+        else if (buffer[i] == '\b') { 
+            if (column == 0 && row == 0) {
+                continue;
+            }
+            
+            if (column == 0) {
+                row--;
+                column = 80;
+            }
+
+            column -= 1;
+            sb->buffer[column*2+row*LINE_SIZE] = 0;
+            sb->buffer[column*2+row*LINE_SIZE+1] = 0;  
+        }
         else {
             sb->buffer[column*2+row*LINE_SIZE] = buffer[i];
             sb->buffer[column*2+row*LINE_SIZE+1] = color;
