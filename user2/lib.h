@@ -3,7 +3,9 @@
 
 #include "stdint.h"
 
-int printf(const char *format,...);
+int printf(const char *format, ...);
 void sleepu(uint64_t ticks);
+void exitu(void);
+void waitu(void);
 
 #endif

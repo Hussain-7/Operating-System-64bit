@@ -42,6 +42,7 @@ struct ProcessControl {
 	struct Process *current_process;
 	struct HeadList ready_list;
 	struct HeadList wait_list;
+	struct HeadList kill_list;
 };
 
 
@@ -53,6 +54,7 @@ struct ProcessControl {
 #define PROC_RUNNING 2
 #define PROC_READY 3
 #define PROC_SLEEP 4
+#define PROC_KILLED 5
 
 
 void init_process(void);
@@ -62,5 +64,7 @@ void yield(void);
 void swap(uint64_t *prev, uint64_t next);
 void sleep(int wait);
 void wake_up(int wait);
+void exit(void);
+void wait(void);
 
 #endif

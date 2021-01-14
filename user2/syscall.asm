@@ -1,6 +1,8 @@
 section .text
 global writeu 
 global sleepu 
+global waitu 
+global exitu 
 
 writeu:
     ;to allocate 16 byte space on stack for the arguments we subtract 16 from rsp which points to stack top
@@ -31,4 +33,19 @@ sleepu:
     int 0x80
     add rsp ,8 ;to get back to original stack position
     ret
+
+exitu:
+    ;it passes zero arguments so no space allocated on stack 
+    mov eax,2
+    ;number of arguments zero
+    mov rdi,0
+    int 0x80
+    ret
+
+waitu:
+    mov eax,3
+    mov rdi,0
+    int 0x80
+    ret
+
 
