@@ -8,7 +8,7 @@ global get_total_memoryu
 
 writeu:
     ;to allocate 16 byte space on stack for the arguments we subtract 16 from rsp which points to stack top
-    sub rsp,16
+    sub rsp,24
     ;since rax hold index for system call function we zero it
     ;since index of write screen function is zero
     xor eax,eax
@@ -16,16 +16,16 @@ writeu:
     ;first argument is in rdi and second in rsi which we save in the new allocated space
     mov [rsp],rdi
     mov [rsp+8],rsi
+    mov [rsp+16],rdx
 
     ;now for interrupt rdi hold number of arguments which are 2
     ;rsi holds address of arguments
-    mov rdi,2
+    mov rdi,3
     mov rsi,rsp
     int 0x80
 
-    add rsp,16
+    add rsp,24
     ret
-
 sleepu:
     sub rsp,8  ;to allocate 8 byte space on stack for the arguments we subtract 8 from rsp which points to stack top
     mov eax,1  ;index no is 1 for sleep in the kernel

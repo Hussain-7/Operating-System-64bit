@@ -4,6 +4,8 @@ global sleepu
 global waitu 
 global exitu 
 
+
+
 writeu:
     ;to allocate 16 byte space on stack for the arguments we subtract 16 from rsp which points to stack top
     sub rsp,16
@@ -23,7 +25,6 @@ writeu:
 
     add rsp,16
     ret
-
 sleepu:
     sub rsp,8  ;to allocate 8 byte space on stack for the arguments we subtract 8 from rsp which points to stack top
     mov eax,1  ;index no is 1 for sleep in the kernel

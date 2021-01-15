@@ -33,8 +33,8 @@ void init_memory(void)
             total_mem += mem_map[i].length;
             free_region_count++;
         }
-        
-        printk("%x  %uKB  %u\n",mem_map[i].address,mem_map[i].length/1024,(uint64_t)mem_map[i].type);
+        //This is the memory maps
+        // printk("%x  %uKB  %u\n",mem_map[i].address,mem_map[i].length/1024,(uint64_t)mem_map[i].type);
 	
     }
     for (int i = 0; i < free_region_count; i++) {                  
@@ -51,7 +51,7 @@ void init_memory(void)
 
     //since free_memory.next point to the last page hence by added a page size to address of lastpage we can get memory_end
     memory_end = (uint64_t)free_memory.next+PAGE_SIZE;
-    printk("%x\n",memory_end);
+    // printk("%x\n",memory_end);
 }
 
 uint64_t get_total_memory(void)
