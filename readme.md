@@ -1,6 +1,6 @@
 # Os-Project #
 
-## Steps to run project ##
+## Command's to run project ##
 
 ### 1) run ./build.sh in user1 directory ###
 ### 4) copy the generated user1.bin to the main directory##
