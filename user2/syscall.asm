@@ -7,7 +7,7 @@ global keyboard_readu
 global get_total_memoryu
 
 writeu:
-    ;to allocate 16 byte space on stack for the arguments we subtract 16 from rsp which points to stack top
+    ;to allocate 24 byte space on stack for the arguments we subtract 16 from rsp which points to stack top
     sub rsp,24
     ;since rax hold index for system call function we zero it
     ;since index of write screen function is zero
@@ -49,7 +49,6 @@ waitu:
     mov rdi,0
     int 0x80
     ret
-
 
 keyboard_readu:
     mov eax,4

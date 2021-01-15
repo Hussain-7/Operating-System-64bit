@@ -1,5 +1,6 @@
 #include "stdint.h"
 #include "stdarg.h"
+#include "lib.h"
 
 extern int writeu(char *buffer, int buffer_size,char color);
 
@@ -108,9 +109,14 @@ int printf(const char *format, ...)
             }
         }     
     }
-
-    buffer_size = writeu(buffer, buffer_size,0xe);
+    if(!memcmp("shell# ",buffer,7))
+    {
+        buffer_size = writeu(buffer, buffer_size,0xe);
+    }
+    else
+    {
+        buffer_size = writeu(buffer, buffer_size,0x7);
+    }
     va_end(args);
-
     return buffer_size;
 }
