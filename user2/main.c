@@ -8,7 +8,25 @@ static void cmd_get_total_memory(void)
     uint64_t total;
     
     total = get_total_memoryu();
-    printf("Total Memory is %dMB\n", total);
+    printf("Total Memory is %dmb\n", total/(1024*1024));
+}
+static void cmd_get_free_memory(void)
+{
+    uint64_t total;
+    total = get_free_memoryu();
+    printf("Total Free Memory is %dmb\n", total/(1024*1024));
+
+}
+static void cmd_get_used_memory(void)
+{
+    uint64_t total;    
+    total = get_used_memoryu();
+    printf("Total Used Memory is %dmb\n", total/(1024*1024));
+}
+
+static void cmd_clear_screen(void)
+{
+   clear_screenu();
 }
 
 static int read_cmd(char *buffer)
@@ -45,17 +63,43 @@ static int parse_cmd(char *buffer, int buffer_size)
     if (buffer_size == 8 && (!memcmp("totalmem", buffer, 8))) {
         cmd = 0;
     }
+    else if (buffer_size == 7 && (!memcmp("freemem", buffer, 7))) {
+        cmd = 1;
+    }
+    else if (buffer_size == 7 && (!memcmp("usedmem", buffer, 7))) {
+        cmd = 2;
+    }
+    else if (buffer_size == 5 && (!memcmp("clear", buffer, 5))) {
+        cmd = 3;
+    }
+    
 
     return cmd;
 }
 
 static void execute_cmd(int cmd)
 { 
-    CmdFunc cmd_list[1] = {cmd_get_total_memory};
+    CmdFunc cmd_list[4] = {cmd_get_total_memory,cmd_get_free_memory,cmd_get_used_memory,cmd_clear_screen};
     
-    if (cmd == 0) {       
-        cmd_list[0]();
+    switch (cmd)
+    {
+    case 0:
+         cmd_list[0]();
+        break;
+    case 1:
+         cmd_list[1]();
+        break;
+    case 2:
+         cmd_list[2]();
+        break;
+    case 3:
+        cmd_list[3]();
+        break;
+    
+    default:
+        break;
     }
+    
 }
 
 int main(void)

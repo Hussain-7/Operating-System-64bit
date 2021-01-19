@@ -44,7 +44,7 @@ LoadLoader:
     mov dword[si+8],1
     mov dword[si+0xc],0
     mov dl,[DriveId]
-    mov ah,0x42
+    mov ah,0x42;means we want to use disk extension service
     int 0x13
     jc  ReadError
 

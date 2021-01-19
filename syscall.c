@@ -55,6 +55,20 @@ static int sys_get_total_memory(int64_t *argptr)
     return get_total_memory();
 }
 
+static int sys_get_free_memory(int64_t *argptr)
+{
+    return get_free_memory();
+}
+static int sys_get_used_memory(int64_t *argptr)
+{
+    return get_used_memory();
+}
+static int sys_clear_screen(int64_t *argptr)
+{
+    clear_screen();
+    return 1;
+}
+
 void init_system_call(void)
 {
     system_calls[0] = sys_write;
@@ -63,6 +77,10 @@ void init_system_call(void)
     system_calls[3] = sys_wait;
     system_calls[4] = sys_keyboard_read;
     system_calls[5] = sys_get_total_memory;
+    system_calls[6] = sys_get_free_memory;
+    system_calls[7] = sys_get_used_memory;
+    system_calls[8] = sys_clear_screen;
+
 }
 
 void system_call(struct TrapFrame *tf)
@@ -71,7 +89,7 @@ void system_call(struct TrapFrame *tf)
     int64_t param_count = tf->rdi;
     int64_t *argptr = (int64_t*)tf->rsi;
 
-    if (param_count < 0 || i> 5 || i< 0) { 
+    if (param_count < 0 || i> 8 || i< 0) { 
         tf->rax = -1;
         return;
     }
