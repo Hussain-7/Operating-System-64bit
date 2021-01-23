@@ -109,7 +109,7 @@ int printf(const char *format, ...)
         }     
     }
 
-    buffer_size = writeu(buffer, buffer_size,0x0e);
+    buffer_size = writeu(buffer, buffer_size,0x7);
     va_end(args);
 
     return buffer_size;

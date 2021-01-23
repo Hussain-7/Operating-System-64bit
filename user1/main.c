@@ -2,8 +2,12 @@
 
 int main(void)
 {
+    int64_t i = 0;
+
     while (1) {
-        waitu();
+        printf("user process %d\n", i);
+        sleepu(100);
+        i++;
     }
     return 0;
 }

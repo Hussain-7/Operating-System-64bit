@@ -18,9 +18,9 @@ void init_memory(void)
 {
     //variable count indicates how many memory regions we have
     //here it is 4 bytes since we use fixed width data type
-    int32_t count = *(int32_t*)0x9000;
+    int32_t count = *(int32_t*)0x20000;
     //stores the size of free memry we can use in the system
-    struct E820 *mem_map = (struct E820*)0x9008;	
+    struct E820 *mem_map = (struct E820*)0x20008;	
     //is used to store actual number of free memory region
     free_region_count = 0;
     ASSERT(count <= 50);
@@ -83,7 +83,7 @@ uint64_t get_used_memory(void)
 static void free_region(uint64_t v, uint64_t e)
 {
     for (uint64_t start = PA_UP(v); start+PAGE_SIZE <= e; start += PAGE_SIZE) {        
-        if (start+PAGE_SIZE <= 0xffff800040000000) {            
+        if (start+PAGE_SIZE <= 0xffff800030000000) {            
            kfree(start);
         }
     }
@@ -93,7 +93,7 @@ void kfree(uint64_t v)
 {
     ASSERT(v % PAGE_SIZE == 0);
     ASSERT(v >= (uint64_t)&end);
-    ASSERT(v+PAGE_SIZE <= 0xffff800040000000);
+    ASSERT(v+PAGE_SIZE <= 0xffff800030000000);
 
     //converting virtual address to the pointer of type structure page
     struct Page *page_address = (struct Page*)v;
@@ -109,7 +109,7 @@ void* kalloc(void)
     if (page_address != NULL) {
         ASSERT((uint64_t)page_address % PAGE_SIZE == 0);
         ASSERT((uint64_t)page_address >= (uint64_t)&end);
-        ASSERT((uint64_t)page_address+PAGE_SIZE <= 0xffff800040000000);
+        ASSERT((uint64_t)page_address+PAGE_SIZE <= 0xffff800030000000);
 
         //since we are returning page pointed by head now we point the head to thhe next page
         free_memory.next = page_address->next;            
@@ -243,7 +243,7 @@ uint64_t setup_kvm(void)
     if(page_map != 0){
         memset((void*)page_map, 0, PAGE_SIZE);        
         //using PTE_P|PTE_W in last parameter of map_pages function we specify that kernel memory is readable,writeable and not accessible by the user applications
-        if(!map_pages(page_map, KERNEL_BASE, memory_end, V2P(KERNEL_BASE), PTE_P|PTE_W))
+        if(!map_pages(page_map, KERNEL_BASE, P2V(0x40000000), V2P(KERNEL_BASE), PTE_P|PTE_W))
         {
             free_vm(page_map);
             page_map=0;

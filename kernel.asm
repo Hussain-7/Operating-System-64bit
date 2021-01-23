@@ -192,12 +192,14 @@ InitPIC:
    retf
 
 KernelEntry:
-   
+   xor ax,ax
+   mov ss,ax
    ;When we enter the kernel entry we can jump to the main function in c
    ;Before we call the main function we need to point are stack pointer to the correct position
     mov rsp,0xffff800000200000
    call KMain
 
 End:
+   sti
    hlt
    jmp End
