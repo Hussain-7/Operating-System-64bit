@@ -69,6 +69,14 @@ static int read_string(char *buffer, int position, const char *string)
 
     return index;
 }
+void clear_screen(){
+    struct ScreenBuffer *sb=&screen_buffer;
+    for(int i=0;i<24;i++)
+        memset(sb->buffer+LINE_SIZE*i,0,LINE_SIZE);
+
+    sb->column=0;
+    sb->row=0;
+}
 
 void write_screen(const char *buffer, int size,  char color)
 {

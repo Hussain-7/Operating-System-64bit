@@ -4,6 +4,7 @@
 
 extern int writeu(char *buffer, int buffer_size,char color);
 
+
 static int udecimal_to_string(char *buffer, int position, uint64_t digits)
 {
     char digits_map[10] = "0123456789";
@@ -66,6 +67,7 @@ static int read_string(char *buffer, int position, const char *string)
 
     return index;
 }
+
 
 int printf(const char *format, ...)
 {

@@ -93,10 +93,11 @@ SetTss:
    ltr ax
    ;setting up tss in done
 
+;Programable interval timer
 InitPIT:
 ;There are 3 channels in the PIT,through channel 0 to channel 2
 ;channel 1 and 2 are not used in our system so we only use channel 0
-;PIT has 4 registers,1 mode command register and other 3 data registers
+;PIT has 4 registers, 3 data registers1 mode command register and other
 ;Mode command register has 4 parts in it.
 ;bit 0 is 0 which mean binary form else bcd for if 1
 ;bit 1-3 is operating mode we set it to 010 which is mode 2 used for recorring interrup

@@ -10,9 +10,10 @@ static void free_region(uint64_t v, uint64_t e);
 static struct FreeMemRegion free_mem_region[50];
 static struct Page free_memory;
 uint64_t total_mem;
+uint64_t free_mem;
 static uint64_t memory_end;
 extern char end;
-
+int free_region_count = 0;
 void init_memory(void)
 {
     //variable count indicates how many memory regions we have
@@ -21,11 +22,9 @@ void init_memory(void)
     //stores the size of free memry we can use in the system
     struct E820 *mem_map = (struct E820*)0x9008;	
     //is used to store actual number of free memory region
-    int free_region_count = 0;
-
-
+    free_region_count = 0;
     ASSERT(count <= 50);
-
+    free_region_count = 0;
 	for(int32_t i = 0; i < count; i++) {        
         if(mem_map[i].type == 1) {			
             free_mem_region[free_region_count].address = mem_map[i].address;
@@ -57,8 +56,28 @@ void init_memory(void)
 uint64_t get_total_memory(void)
 {
     //simply returning memory in mb format
-    return total_mem/1024/1024;
+    return total_mem;
 }
+
+uint64_t get_free_memory(void)
+{
+    // init_memory();
+    free_mem=0;
+    for (int i = 0; i < free_region_count; i++) {                  
+        free_mem+= free_mem_region[i].length;  
+    }
+    return free_mem;
+}
+
+uint64_t get_used_memory(void)
+{
+    // init_memory();
+    uint64_t used_memory=0;
+    used_memory=total_mem-get_free_memory();
+    return used_memory;
+}
+
+
 
 
 static void free_region(uint64_t v, uint64_t e)

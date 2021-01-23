@@ -46,7 +46,6 @@ void init_idt(void)
     init_idt_entry(&vectors[39],(uint64_t)vector39,0x8e);
     //in case of this interrup we set dpl to 3 instead of zero because we fire interrupt in ring3
     init_idt_entry(&vectors[0x80],(uint64_t)sysint,0xee);
-
     idt_pointer.limit = sizeof(vectors)-1;
     idt_pointer.addr = (uint64_t)vectors;
     load_idt(&idt_pointer);

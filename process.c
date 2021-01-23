@@ -78,12 +78,12 @@ void init_process(void)
     struct ProcessControl *process_control;
     struct Process *process;
     struct HeadList *list;
-    uint64_t addr[3] = {0x20000, 0x30000,0x40000};
+    uint64_t addr[4] = {0x20000, 0x30000,0x40000,0x50000};
 
     process_control = get_pc();
     list = &process_control->ready_list;
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         process = find_unused_process();
         set_process_entry(process, addr[i]);
         append_list_tail(list, (struct List*)process);

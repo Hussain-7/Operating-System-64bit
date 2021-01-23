@@ -19,6 +19,7 @@ struct IdtPtr {
     //we have added attribute packed here so that sturcture stored is without padding in it
     //and then we would load wrong address into idt register
 } __attribute__((packed));
+
 struct TrapFrame {
     //each data here is 8bytes (int64_t)
     int64_t r15;

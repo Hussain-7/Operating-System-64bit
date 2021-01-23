@@ -1,7 +1,8 @@
 #include "stdint.h"
 #include "stdarg.h"
+#include "lib.h"
 
-extern int writeu(char *buffer, int buffer_size);
+extern int writeu(char *buffer, int buffer_size,char color);
 
 static int udecimal_to_string(char *buffer, int position, uint64_t digits)
 {
@@ -109,8 +110,9 @@ int printf(const char *format, ...)
         }     
     }
 
-    buffer_size = writeu(buffer, buffer_size);
+ 
+    buffer_size = writeu(buffer, buffer_size,0x7);
+    
     va_end(args);
-
     return buffer_size;
 }

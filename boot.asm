@@ -38,13 +38,13 @@ LoadLoader:
 
     mov si,ReadPacket
     mov word[si],0x10
-    mov word[si+2],5
+    mov word[si+2],15
     mov word[si+4],0x7e00
     mov word[si+6],0
     mov dword[si+8],1
     mov dword[si+0xc],0
     mov dl,[DriveId]
-    mov ah,0x42
+    mov ah,0x42;means we want to use disk extension service
     int 0x13
     jc  ReadError
 
@@ -90,12 +90,13 @@ ReadPacket: times 16 db 0
 
 times (0x1be-($-$$)) db 0
 
+    ;These walue can be checked using command hexdump -C os.img
     db 80h          ;Boot indicator
-    db 0,2,0        ;staring CHS   C-cylinder h-height  s-sector
-    db 0f0h         ;type
-    db 0ffh,0ffh,0ffh  ;ending CHS
-    dd 1             ;starting sector
-    dd (20*16*63-1)  ;size	
+    db 1,1,0        ;staring CHS   C-cylinder h-height  s-sector
+    db 06h         ;type
+    db 0fh,03fh,0cah  ;ending CHS
+    dd 3fh             ;starting sector
+    dd 031f11h  ;size	
     times (16*3) db 0
 
     ;sector size 512 bytes

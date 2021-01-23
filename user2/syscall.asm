@@ -5,6 +5,9 @@ global waitu
 global exitu 
 global keyboard_readu
 global get_total_memoryu
+global get_free_memoryu
+global get_used_memoryu
+global clear_screenu
 
 writeu:
     ;to allocate 24 byte space on stack for the arguments we subtract 16 from rsp which points to stack top
@@ -62,3 +65,20 @@ get_total_memoryu:
     int 0x80
     ret
 
+get_free_memoryu:
+    mov eax,6
+    xor edi,edi
+    int 0x80
+    ret
+
+get_used_memoryu:
+    mov eax,7
+    xor edi,edi
+    int 0x80
+    ret
+
+clear_screenu:
+    mov eax,8
+    xor edi,edi
+    int 0x80
+    ret

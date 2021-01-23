@@ -214,8 +214,6 @@ pstart:
     jmp TrapReturn
 
 
-
-
 ;---------[ Working of swap function ]
 ;suppose the current process is process 1 and we want to switch process by calling function swap.
 ;The function saves the return address as well as the general-purpose registers on the stack.
