@@ -11,3 +11,8 @@
 ### 5) run ./build.sh in main directory ###
 ### 6) run bochs ###
 ### 7) press c to continue in terminal so that os is loaded in vm ###
+
+
+### Command to mount Disk ###
+### run gnome-disk-image-mounter --writable os.img ###
+

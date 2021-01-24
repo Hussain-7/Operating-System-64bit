@@ -171,9 +171,15 @@ int printk(const char *format, ...)
         }     
     }
 
-    write_screen(buffer, buffer_size, 0xf);
+     if(!memcmp("shell# ",buffer,7))
+    {
+        buffer_size = writeu(buffer, buffer_size,0xe);
+    }
+    else
+    {
+        buffer_size = writeu(buffer, buffer_size,0x7);
+    }
     va_end(args);
-
     //return total number of characters being printed
     return buffer_size;
 }

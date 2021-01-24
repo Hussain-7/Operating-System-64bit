@@ -81,7 +81,7 @@ static struct Process* alloc_new_process(void){
     return proc;
     
 }
-static struct ProcessControl* get_pc(void)
+struct ProcessControl* get_pc(void)
 {
     return &pc;
 }

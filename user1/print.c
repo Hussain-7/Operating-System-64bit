@@ -1,7 +1,9 @@
 #include "stdint.h"
 #include "stdarg.h"
+#include "lib.h"
 
-extern int writeu(char *buffer, int buffer_size, char color);
+extern int writeu(char *buffer, int buffer_size,char color);
+
 
 static int udecimal_to_string(char *buffer, int position, uint64_t digits)
 {
@@ -66,6 +68,7 @@ static int read_string(char *buffer, int position, const char *string)
     return index;
 }
 
+
 int printf(const char *format, ...)
 {
     char buffer[1024];
@@ -108,9 +111,20 @@ int printf(const char *format, ...)
             }
         }     
     }
-
-    buffer_size = writeu(buffer, buffer_size,0x7);
+    // if(!memcmp("shell# ",buffer,7))
+    // {
+    //     writeu(buffer, buffer_size,0xf);
+    //     writeu(buffer, buffer_size,0xf);
+    //     writeu(buffer, buffer_size,0xf);
+    //     buffer_size = writeu(buffer, buffer_size,0xf);
+    // }
+    // else
+    // {
+    //     writeu(buffer, buffer_size,0xf);
+    //     writeu(buffer, buffer_size,0xf);
+    //     writeu(buffer, buffer_size,0xf);
+    //     buffer_size = writeu(buffer, buffer_size,0x7);
+    // }
     va_end(args);
-
     return buffer_size;
 }

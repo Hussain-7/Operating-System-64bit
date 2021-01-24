@@ -3,6 +3,7 @@
 
 #include "trap.h"
 #include "lib.h"
+#include "file.h"
 
 //Essential data of process is stored in this structure
 struct Process {
@@ -10,6 +11,7 @@ struct Process {
     int pid;
 	int state;
 	int wait;
+	struct FileDesc *file[100];
 	uint64_t context;
 	uint64_t page_map;//stores address of pml4 table so when we run process we can switch to vm
 	uint64_t stack;//Stack is used for kernel code.A process has two stacks one for user mode and other for kernel mode
@@ -37,7 +39,6 @@ struct TSS {
 	uint16_t iopb;
 } __attribute__((packed));
 
-
 struct ProcessControl {
 	struct Process *current_process;
 	struct HeadList ready_list;
@@ -45,9 +46,7 @@ struct ProcessControl {
 	struct HeadList kill_list;
 };
 
-
 #define STACK_SIZE (2*1024*1024)
-//we can have 10 process at max running in the system
 #define NUM_PROC 10
 #define PROC_UNUSED 0
 #define PROC_INIT 1
@@ -56,10 +55,8 @@ struct ProcessControl {
 #define PROC_SLEEP 4
 #define PROC_KILLED 5
 
-
 void init_process(void);
-void launch(void);
-void pstart(struct TrapFrame *tf);
+struct ProcessControl* get_pc(void);
 void yield(void);
 void swap(uint64_t *prev, uint64_t next);
 void sleep(int wait);
