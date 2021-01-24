@@ -14,7 +14,7 @@ global read_file
 global get_file_size
 global close_file
 global fork
-
+global exec
 
 writeu:
     ;to allocate 24 byte space on stack for the arguments we subtract 16 from rsp which points to stack top
@@ -160,6 +160,18 @@ fork:
 
     ret
 
+exec:
+    sub rsp,8
+    mov eax,14
+
+    mov [rsp],rdi
+    mov rdi,1
+    mov rsi,rsp
+
+    int 0x80
+
+    add rsp,8
+    ret
 
 
 

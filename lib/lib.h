@@ -21,5 +21,6 @@ int read_file(int fd, void *buffer, uint32_t size);
 void close_file(int fd);
 int get_file_size(int fd);
 int fork();
+void exec(char* name);
 
 #endif
