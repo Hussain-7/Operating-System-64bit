@@ -47,7 +47,7 @@ struct ProcessControl {
 };
 
 #define STACK_SIZE (2*1024*1024)
-#define NUM_PROC 10
+#define NUM_PROC 20
 #define PROC_UNUSED 0
 #define PROC_INIT 1
 #define PROC_RUNNING 2
@@ -62,6 +62,7 @@ void swap(uint64_t *prev, uint64_t next);
 void sleep(int wait);
 void wake_up(int wait);
 void exit(void);
-void wait(void);
+void wait(int pid);
+int fork(void);
 
 #endif

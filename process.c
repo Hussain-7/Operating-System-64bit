@@ -120,37 +120,9 @@ static void init_user_process(void)
 }
 void init_process(void)
 {  
-    // struct ProcessControl *process_control;
-    // struct Process *process;
-    // struct HeadList *list;
-    // uint64_t addr[4] = {0x20000, 0x30000,0x40000,0x50000};
-
-    // process_control = get_pc();
-    // list = &process_control->ready_list;
-
-    // for (int i = 0; i < 4; i++) {
-    //     process = find_unused_process();
-    //     set_process_entry(process, addr[i]);
-    //     append_list_tail(list, (struct List*)process);
-    // }
     init_idle_process();
     init_user_process();
 }
-
-// void launch(void)
-// {
-//     struct ProcessControl *process_control;
-//     struct Process *process;
-
-//     process_control = get_pc();
-//     process = (struct Process*)remove_list_head(&process_control->ready_list);
-//     process->state = PROC_RUNNING;
-//     process_control->current_process = process;
-    
-//     set_tss(process);
-//     switch_vm(process->page_map);
-//     pstart(process->tf);
-// }
 
 
 static void switch_process(struct Process *prev, struct Process *current)
@@ -249,15 +221,16 @@ void exit(void)
     process_control = get_pc();
     process = process_control->current_process;
     process->state = PROC_KILLED;
+    process->wait = process->pid;
 
     list = &process_control->kill_list;
     append_list_tail(list, (struct List*)process);
 
-    wake_up(1);
+    wake_up(-3);
     schedule();
 }
 
-void wait(void)
+void wait(int pid)
 {
     struct ProcessControl *process_control;
     struct Process *process;
@@ -268,15 +241,66 @@ void wait(void)
 
     while (1) {
         if (!is_list_empty(list)) {
-            process = (struct Process*)remove_list_head(list); 
-            ASSERT(process->state == PROC_KILLED);
+            process = (struct Process*)remove_list(list, pid); 
+            if (process != NULL) {
+                ASSERT(process->state == PROC_KILLED);
+                kfree(process->stack);
+                free_vm(process->page_map);            
 
-            kfree(process->stack);
-            free_vm(process->page_map);            
-            memset(process, 0, sizeof(struct Process));   
+                for (int i = 0; i < 100; i++) {
+                    if (process->file[i] != NULL) {
+                        process->file[i]->fcb->count--;
+                        process->file[i]->count--;
+
+                        if (process->file[i]->count == 0) {
+                            process->file[i]->fcb = NULL;
+                        }
+                    }
+                }
+                memset(process, 0, sizeof(struct Process));
+                break;
+            }   
         }
-        else {
-            sleep(1);
+       
+        sleep(-3);     
+    }
+}
+
+int fork(void)
+{
+    struct ProcessControl *process_control;
+    struct Process *process;
+    struct Process *current_process;
+    struct HeadList *list;
+
+    process_control = get_pc();
+    current_process = process_control->current_process;
+    list = &process_control->ready_list;
+
+    process = alloc_new_process();
+    if (process == NULL) {
+        ASSERT(0);
+        return -1;
+    }
+
+    if (copy_uvm(process->page_map, current_process->page_map, PAGE_SIZE) == false) {
+        ASSERT(0);
+        return -1;
+    }
+
+    memcpy(process->file, current_process->file, 100 * sizeof(struct FileDesc*));
+
+    for (int i = 0; i < 100; i++) {
+        if (process->file[i] != NULL) {
+            process->file[i]->count++;
+            process->file[i]->fcb->count++;
         }
     }
+
+    memcpy(process->tf, current_process->tf, sizeof(struct TrapFrame));
+    process->tf->rax = 0;
+    process->state = PROC_READY;
+    append_list_tail(list, (struct List*)process);
+
+    return process->pid;
 }

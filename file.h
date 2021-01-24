@@ -50,12 +50,11 @@ struct FCB {
     uint32_t file_size;
     int count;
 };
-
 struct FileDesc {
     struct FCB *fcb;
     uint32_t position;
+    int count;
 };
-
 struct Process;
 
 #define FS_BASE 0x30000000

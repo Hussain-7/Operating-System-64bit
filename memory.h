@@ -63,7 +63,7 @@ uint64_t setup_kvm(void);
 uint64_t get_total_memory(void);
 uint64_t get_free_memory(void);
 uint64_t get_used_memory(void);
-
+bool copy_uvm(uint64_t dst_map, uint64_t src_map, int size);
 #endif
 
 

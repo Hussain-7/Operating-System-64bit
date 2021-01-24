@@ -13,6 +13,7 @@ global open_file
 global read_file
 global get_file_size
 global close_file
+global fork
 
 
 writeu:
@@ -54,9 +55,16 @@ exitu:
     ret
 
 waitu:
+    sub rsp,8
     mov eax,3
-    mov rdi,0
+
+    mov [rsp],rdi
+    mov rdi,1
+    mov rsi,rsp
+
     int 0x80
+
+    add rsp,8
     ret
 
 keyboard_readu:
@@ -136,16 +144,26 @@ get_file_size:
 close_file:
     sub rsp,8
     mov eax,12
-
     mov [rsp],rdi
     mov rdi,1
     mov rsi,rsp
+    int 0x80
+    add rsp,8
+    ret
 
+    
+fork:
+    mov eax,13
+    xor edi,edi
+    
     int 0x80
 
-    add rsp,8
-
     ret
+
+
+
+
+
 
 
 

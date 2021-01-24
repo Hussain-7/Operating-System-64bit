@@ -208,6 +208,7 @@ int open_file(struct Process *proc, char *path_name)
     
     memset(&file_desc_table[file_desc_index], 0, sizeof(struct FileDesc));
     file_desc_table[file_desc_index].fcb = &fcb_table[fcb_index];
+    file_desc_table[file_desc_index].count = 1;
     proc->file[fd] = &file_desc_table[file_desc_index];
     
     return fd;
@@ -246,7 +247,7 @@ static uint32_t read_raw_data(uint32_t cluster_index, char *buffer, uint32_t pos
             break;     
         }   
               
-        memcpy(buffer, data, cluster_size);     
+        memcpy(buffer, data, cluster_size);
         buffer += cluster_size;
         read_size += cluster_size;
         index = get_cluster_value(index);
@@ -274,8 +275,12 @@ int read_file(struct Process *proc, int fd, void *buffer, uint32_t size)
 void close_file(struct Process *proc, int fd)
 {
     put_fcb(proc->file[fd]->fcb);
+    proc->file[fd]->count--;
 
-    proc->file[fd]->fcb = NULL;
+    if (proc->file[fd]->count == 0) {
+        proc->file[fd]->fcb = NULL;
+    }
+
     proc->file[fd] = NULL;
 }
 
