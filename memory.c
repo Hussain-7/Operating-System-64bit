@@ -56,7 +56,7 @@ void init_memory(void)
 uint64_t get_total_memory(void)
 {
     //simply returning memory in mb format
-    return total_mem;
+    return total_mem/(1024*1024);
 }
 
 uint64_t get_free_memory(void)

@@ -113,11 +113,11 @@ int printf(const char *format, ...)
     }
     if(!memcmp("shell# ",buffer,7))
     {
-        buffer_size = writeu(buffer, buffer_size,0xf);
+        buffer_size = writeu(buffer, buffer_size,0xe);
     }
     else
     {
-        buffer_size = writeu(buffer, buffer_size,0x7);
+        buffer_size = writeu(buffer, buffer_size,0xf);
     }
     va_end(args);
     return buffer_size;
